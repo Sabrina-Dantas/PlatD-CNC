@@ -546,6 +546,9 @@
 </div>
 
 <script>
+
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 var controller, ui;
 window.addEventListener("load", (function () {
     controller = new CWS.Controller(
@@ -598,8 +601,6 @@ window.addEventListener("load", (function () {
 
     // utility to get/set editor content (ACE compatibility)
     function getEditorContent(){
-        let mobileSafeCode = "";
-
         try{
             if(controller && controller.editor && controller.editor.editor && typeof controller.editor.editor.getValue === "function") return controller.editor.editor.getValue();
             if(controller && controller.editor && typeof controller.editor.getValue === "function") return controller.editor.getValue();
@@ -608,8 +609,6 @@ window.addEventListener("load", (function () {
         return "";
     }
     function setEditorContent(txt){
-        let mobileSafeCode = "";
-
         try{
             if(controller && controller.editor && controller.editor.editor && typeof controller.editor.editor.setValue === "function") { controller.editor.editor.setValue(txt, -1); return true; }
             if(controller && controller.editor && typeof controller.editor.setValue === "function") { controller.editor.setValue(txt, -1); return true; }
@@ -620,9 +619,13 @@ window.addEventListener("load", (function () {
 
     // Save with File System Access API if available, else fallback to download
     async function saveToFile(defaultName){
-        let mobileSafeCode = "";
+    const code = getEditorContent();
 
-        const code = mobileSafeCode || "";
+    if (isMobile) {
+        localStorage.setItem("gcode_backup", code);
+        showStatus("Salvo no dispositivo (mobile).");
+        return true;
+    }
         if(window.showSaveFilePicker){
             try{
                 const handle = await window.showSaveFilePicker({
@@ -661,7 +664,12 @@ window.addEventListener("load", (function () {
 
     // Open with File System Access API if available, else fallback to input
     async function openFromFile(){
-        let mobileSafeCode = "";
+        if (isMobile) {
+    const code = localStorage.getItem("gcode_backup") || "";
+    setEditorContent(code);
+    showStatus("Arquivo carregado (mobile).");
+    return true;
+}
 
         if(window.showOpenFilePicker){
             try{
@@ -730,14 +738,13 @@ window.addEventListener("load", (function () {
     });
 
     modalSaveBtn.addEventListener("click", async function(){
-    modal.style.display = "none";
-    const ok = await saveToFile("");
-
-    setEditorContent("");
-    mobileSafeCode = "";   // 🔑 ESSENCIAL
-    showStatus("Editor limpo.");
-});
-
+        modal.style.display = "none";
+        const ok = await saveToFile("");
+        // proceed to clear editor even if save cancelled? follow user's instructions: after Save action, then clear.
+        setEditorContent("");
+        localStorage.removeItem("gcode_backup"); // 👈 AQUI
+        showStatus("Editor limpo.");
+    });
 
     modalDontSaveBtn.addEventListener("click", function(){
         modal.style.display = "none";
@@ -885,25 +892,17 @@ const gabaritos = {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   setTimeout(() => {
-    const ed =
-        controller?.editor?.editor ||
-        controller?.editor ||
-        window.editor;
+    // Tenta localizar o editor (mantendo compatibilidade)
+    let aceEditor = null;
+    if (window.controller?.editor?.editor) aceEditor = window.controller.editor.editor;
+    else if (window.controller?.editor) aceEditor = window.controller.editor;
+    else if (window.editor) aceEditor = window.editor;
+    else if (window.ace?.edit) aceEditor = ace.edit(document.querySelector(".ace_editor"));
 
-    if (!ed) return;
-
-    // sincroniza sempre que o código muda
-    if (ed.session?.on) {
-        ed.session.on("change", () => {
-            mobileSafeCode = ed.getValue();
-        });
-    } else if (ed.on) {
-        ed.on("change", () => {
-            mobileSafeCode = ed.getValue();
-        });
+    if (!aceEditor) {
+      console.warn("❌ Nenhum editor ACE encontrado. Verificação não ativada.");
+      return;
     }
-}, 1500);
-
 
     // Cria o painel de feedback dentro do canvasContainer (em baixo do desenho)
     const canvasContainer = document.getElementById("canvasContainer");
