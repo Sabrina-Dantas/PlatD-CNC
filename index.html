@@ -546,9 +546,8 @@
 </div>
 
 <script>
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
 var controller, ui;
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 window.addEventListener("load", (function () {
     controller = new CWS.Controller(
         new CWS.CodeEditor(),
@@ -618,14 +617,7 @@ window.addEventListener("load", (function () {
 
     // Save with File System Access API if available, else fallback to download
     async function saveToFile(defaultName){
-        const code = getEditorContent();
-
-        if (isMobile) {
-            localStorage.setItem("gcode_backup", code);
-            showStatus("Salvo no dispositivo (mobile).");
-            return true;
-        }
-
+        const code = getEditorContent() || "";
         if(window.showSaveFilePicker){
             try{
                 const handle = await window.showSaveFilePicker({
@@ -664,13 +656,6 @@ window.addEventListener("load", (function () {
 
     // Open with File System Access API if available, else fallback to input
     async function openFromFile(){
-        if (isMobile) {
-            const code = localStorage.getItem("gcode_backup") || "";
-            setEditorContent(code);
-            showStatus("Arquivo carregado (mobile).");
-            return true;
-        }
-
         if(window.showOpenFilePicker){
             try{
                 const [handle] = await window.showOpenFilePicker({
@@ -714,16 +699,37 @@ window.addEventListener("load", (function () {
     }
 
     // Bind Save/Open/New
-    document.getElementById("saveFile").addEventListener("click", async function(e){
+    document.getElementById("saveFile").addEventListener("click", function(e){
         e.stopPropagation();
         fileMenu.style.display = "none";
-        await saveToFile("");
+
+        const code = getEditorContent();
+
+        // === MOBILE SAVE FIX ===
+        if (isMobile) {
+            localStorage.setItem("gcode_backup", code);
+            showStatus("Salvo no dispositivo (mobile).");
+            return;
+        }
+
+        // === DESKTOP ===
+        saveToFile("");
     });
 
-    document.getElementById("openFile").addEventListener("click", async function(e){
+    document.getElementById("openFile").addEventListener("click", function(e){
         e.stopPropagation();
         fileMenu.style.display = "none";
-        await openFromFile();
+
+        // === MOBILE OPEN FIX ===
+        if (isMobile) {
+            const code = localStorage.getItem("gcode_backup") || "";
+            setEditorContent(code);
+            showStatus("Arquivo carregado (mobile).");
+            return;
+        }
+
+        // === DESKTOP ===
+        openFromFile();
     });
 
     // New: show modal asking to save
