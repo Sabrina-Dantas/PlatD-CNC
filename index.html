@@ -598,13 +598,27 @@ window.addEventListener("load", (function () {
 
     // utility to get/set editor content (ACE compatibility)
     function getEditorContent(){
-        try{
-            if(controller && controller.editor && controller.editor.editor && typeof controller.editor.editor.getValue === "function") return controller.editor.editor.getValue();
-            if(controller && controller.editor && typeof controller.editor.getValue === "function") return controller.editor.getValue();
-            if(window.editor && typeof window.editor.getValue === "function") return window.editor.getValue();
-        }catch(e){ console.warn(e); }
+    try{
+        let ed = null;
+
+        if (controller?.editor?.editor) ed = controller.editor.editor;
+        else if (controller?.editor) ed = controller.editor;
+        else if (window.editor) ed = window.editor;
+
+        if (!ed) return "";
+
+        // 🔑 força sincronização no mobile
+        if (ed.session && ed.session.getValue) {
+            return ed.session.getValue();
+        }
+
+        return ed.getValue ? ed.getValue() : "";
+    } catch(e){
+        console.warn(e);
         return "";
     }
+}
+
     function setEditorContent(txt){
         try{
             if(controller && controller.editor && controller.editor.editor && typeof controller.editor.editor.setValue === "function") { controller.editor.editor.setValue(txt, -1); return true; }
@@ -616,7 +630,11 @@ window.addEventListener("load", (function () {
 
     // Save with File System Access API if available, else fallback to download
     async function saveToFile(defaultName){
-        const code = getEditorContent() || "";
+    // ⏳ espera 1 frame (resolve mobile)
+    await new Promise(r => requestAnimationFrame(r));
+
+    const code = getEditorContent();
+
         if(window.showSaveFilePicker){
             try{
                 const handle = await window.showSaveFilePicker({
@@ -722,12 +740,17 @@ window.addEventListener("load", (function () {
     });
 
     modalSaveBtn.addEventListener("click", async function(){
-        modal.style.display = "none";
-        const ok = await saveToFile("");
-        // proceed to clear editor even if save cancelled? follow user's instructions: after Save action, then clear.
+    modal.style.display = "none";
+
+    const ok = await saveToFile("");
+
+    // ⏳ pequeno delay antes de limpar (mobile safe)
+    setTimeout(() => {
         setEditorContent("");
         showStatus("Editor limpo.");
-    });
+    }, 50);
+});
+
 
     modalDontSaveBtn.addEventListener("click", function(){
         modal.style.display = "none";
