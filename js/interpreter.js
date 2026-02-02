@@ -48,7 +48,13 @@ CWS.Interpreter = function (machine)
 			{x:0,y:0,z:0,r:0},{x:0,y:0,z:0,r:0},{x:0,y:0,z:0,r:0},{x:0,y:0,z:0,r:0},
 			{x:0,y:0,z:0,r:0},{x:0,y:0,z:0,r:0},{x:0,y:0,z:0,r:0}
 		];
-		this.position = this.settings.pos28;  // Where the interpreter considers the tool to be at this point in the code
+		this.position = this.settings.pos28;  // Where the interpreter considers the tool to be
+
+		// ADICIONAR LOGO APÓS:
+		// Se for Lathe, converter posição inicial X de diâmetro para raio
+		if (this.machineType == "Lathe" && this.position.x !== undefined) {
+			this.position.x = this.position.x / 2.0;
+		}
 
 		this.outputCommands = []; 		// {time:t,comand:cdata}
 
@@ -108,27 +114,48 @@ CWS.Interpreter.prototype.m9999  = function (cmd)
 	};
 
 CWS.Interpreter.prototype.coordinatesToAbsolute  = function (cmd) 
-	{
-	if (this.settings.machine_postion_g53==true)
-	{
-		cmd.param.xyz.x = cmd.param.xyz.x===undefined?this.position.x:cmd.param.xyz.x*this.modal.units;
-		cmd.param.xyz.y = cmd.param.xyz.y===undefined?this.position.y:cmd.param.xyz.y*this.modal.units;
-		cmd.param.xyz.z = cmd.param.xyz.z===undefined?this.position.z:cmd.param.xyz.z*this.modal.units;
-		return;
-	}	
-	if (this.modal.distance==91)
-	{
-		cmd.param.xyz.x = cmd.param.xyz.x===undefined?this.position.x:cmd.param.xyz.x*this.modal.units+this.position.x;
-		cmd.param.xyz.y = cmd.param.xyz.y===undefined?this.position.y:cmd.param.xyz.y*this.modal.units+this.position.y;
-		cmd.param.xyz.z = cmd.param.xyz.z===undefined?this.position.z:cmd.param.xyz.z*this.modal.units+this.position.z;
-	}
-	else
-	{
-		cmd.param.xyz.x = cmd.param.xyz.x===undefined?this.position.x:cmd.param.xyz.x+this.settings.coord_system.x+this.settings.coord_offset.x;
-		cmd.param.xyz.y = cmd.param.xyz.y===undefined?this.position.y:cmd.param.xyz.y+this.settings.coord_system.y+this.settings.coord_offset.y;
-		cmd.param.xyz.z = cmd.param.xyz.z===undefined?this.position.z:cmd.param.xyz.z+this.settings.coord_system.z+this.settings.coord_offset.z;
-	}
-	}
+{
+    if (this.settings.machine_postion_g53==true)
+    {
+        cmd.param.xyz.x = cmd.param.xyz.x===undefined?this.position.x:cmd.param.xyz.x*this.modal.units;
+        cmd.param.xyz.y = cmd.param.xyz.y===undefined?this.position.y:cmd.param.xyz.y*this.modal.units;
+        cmd.param.xyz.z = cmd.param.xyz.z===undefined?this.position.z:cmd.param.xyz.z*this.modal.units;
+        
+        // Converter X de diâmetro para raio em modo Lathe (G18)
+        if (this.plane_select === 18 && cmd.param.xyz.x !== this.position.x) {
+            cmd.param.xyz.x = cmd.param.xyz.x / 2.0;
+        }
+        return;
+    }	
+    if (this.modal.distance==91)  // Modo incremental
+    {
+        var x_increment = cmd.param.xyz.x === undefined ? 0 : cmd.param.xyz.x * this.modal.units;
+        var y_increment = cmd.param.xyz.y === undefined ? 0 : cmd.param.xyz.y * this.modal.units;
+        var z_increment = cmd.param.xyz.z === undefined ? 0 : cmd.param.xyz.z * this.modal.units;
+        
+        // Em modo Lathe, incremento de X é em diâmetro, então dividir por 2
+        if (this.plane_select === 18) {
+            x_increment = x_increment / 2.0;
+        }
+        
+        cmd.param.xyz.x = this.position.x + x_increment;
+        cmd.param.xyz.y = this.position.y + y_increment;
+        cmd.param.xyz.z = this.position.z + z_increment;
+    }
+    else  // Modo absoluto G90
+    {
+        var x_value = cmd.param.xyz.x === undefined ? this.position.x : cmd.param.xyz.x * this.modal.units;
+        
+        // Em modo Lathe, X programado é diâmetro, então dividir por 2 para obter raio
+        if (this.plane_select === 18 && cmd.param.xyz.x !== undefined) {
+            x_value = x_value / 2.0;
+        }
+        
+        cmd.param.xyz.x = x_value + this.settings.coord_system.x + this.settings.coord_offset.x;
+        cmd.param.xyz.y = cmd.param.xyz.y === undefined ? this.position.y : cmd.param.xyz.y * this.modal.units + this.settings.coord_system.y + this.settings.coord_offset.y;
+        cmd.param.xyz.z = cmd.param.xyz.z === undefined ? this.position.z : cmd.param.xyz.z * this.modal.units + this.settings.coord_system.z + this.settings.coord_offset.z;
+    }
+}
 
 	// Sets the feed rate. If in G93 mode the value will be calculated after the G1|G2|G3 functions
 
@@ -209,21 +236,15 @@ CWS.Interpreter.prototype.g2  = function (cmd)
 	if (this.move3dPrinter(cmd))
 		return;
 	this.coordinatesToAbsolute(cmd);
-	// ===== TORNO (G18): usar raio APENAS para cálculo =====
-    var startX = this.position[this.axisXYZ_0];
-    var endX   = cmd.param.xyz[this.axisXYZ_0];
-
-    if (this.plane_select === 18) {
-      startX = startX / 2.0;
-      endX   = endX   / 2.0;
-      }
-
-	var x = endX - startX;
-    var y = cmd.param.xyz[this.axisXYZ_1] - this.position[this.axisXYZ_1];
-
+	var x = cmd.param.xyz[this.axisXYZ_0]-this.position[this.axisXYZ_0];
+	var y = cmd.param.xyz[this.axisXYZ_1]-this.position[this.axisXYZ_1];
 	var z = cmd.param.xyz[this.axisXYZ_linear];
+	// Para torno (G18), X é diâmetro - converter para raio
+    if (this.plane_select === 18) {
+        x = x / 2.0;
+    }
 	var i,j;
-  
+
 	if (cmd.param.r !== undefined)
 	{
 		cmd.param.r *= this.modal.units;
@@ -243,7 +264,7 @@ CWS.Interpreter.prototype.g2  = function (cmd)
         cmd.param.ijk[this.axisIJK_1] = 0.5*(y-(x*h_x2_div_d));
 	}
 
-	var center_axis0 = startX + cmd.param.ijk[this.axisIJK_0];
+	var center_axis0 = this.position[this.axisXYZ_0] + cmd.param.ijk[this.axisIJK_0];
   	var center_axis1 = this.position[this.axisXYZ_1] + cmd.param.ijk[this.axisIJK_1];
   	var r_axis0 = -cmd.param.ijk[this.axisIJK_0];  // Radius vector from center to current location
   	var r_axis1 = -cmd.param.ijk[this.axisIJK_1];
@@ -342,19 +363,13 @@ CWS.Interpreter.prototype.g3  = function (cmd)
 	if (this.move3dPrinter(cmd))
 		return;
 	this.coordinatesToAbsolute(cmd);
-
-	// ===== TORNO (G18): usar raio APENAS para cálculo =====
-    var startX = this.position[this.axisXYZ_0];
-    var endX   = cmd.param.xyz[this.axisXYZ_0];
-
-    if (this.plane_select === 18) {
-      startX = startX / 2.0;
-      endX   = endX   / 2.0;
-      }
-
-	var x = endX - startX;
-    var y = cmd.param.xyz[this.axisXYZ_1] - this.position[this.axisXYZ_1];
+	var x = cmd.param.xyz[this.axisXYZ_0]-this.position[this.axisXYZ_0];
+	var y = cmd.param.xyz[this.axisXYZ_1]-this.position[this.axisXYZ_1];
 	var z = cmd.param.xyz[this.axisXYZ_linear];
+	// Para torno (G18), X é diâmetro - converter para raio
+    if (this.plane_select === 18) {
+        x = x / 2.0;
+    }
 	var i,j;
 
 	if (cmd.param.r !== undefined)
@@ -375,7 +390,7 @@ CWS.Interpreter.prototype.g3  = function (cmd)
         cmd.param.ijk[this.axisIJK_0] = 0.5*(x+(y*h_x2_div_d));
         cmd.param.ijk[this.axisIJK_1] = 0.5*(y-(x*h_x2_div_d));
 	}
-    
+
 	var center_axis0 = this.position[this.axisXYZ_0] + cmd.param.ijk[this.axisIJK_0];
   	var center_axis1 = this.position[this.axisXYZ_1] + cmd.param.ijk[this.axisIJK_1];
   	var r_axis0 = -cmd.param.ijk[this.axisIJK_0];  // Radius vector from center to current location
