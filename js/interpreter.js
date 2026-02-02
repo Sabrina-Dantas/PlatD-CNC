@@ -209,21 +209,21 @@ CWS.Interpreter.prototype.g2  = function (cmd)
 	if (this.move3dPrinter(cmd))
 		return;
 	this.coordinatesToAbsolute(cmd);
-	
-	// ✅ CORREÇÃO: Armazenar valores originais
-	var targetX = cmd.param.xyz[this.axisXYZ_0];
-	var targetY = cmd.param.xyz[this.axisXYZ_1];
-	
-	// Calcular diferenças
-	var x = targetX - this.position[this.axisXYZ_0];
-	var y = targetY - this.position[this.axisXYZ_1];
-	var z = cmd.param.xyz[this.axisXYZ_linear];
-	
-	// ✅ CORREÇÃO: Para torno (G18), X é diâmetro - converter APENAS para cálculo do centro
-	if (this.plane_select === 18) {
-		x = x / 2.0;
-	}
+	// ===== TORNO (G18): usar raio APENAS para cálculo =====
+    var startX = this.position[this.axisXYZ_0];
+    var endX   = cmd.param.xyz[this.axisXYZ_0];
 
+    if (this.plane_select === 18) {
+      startX = startX / 2.0;
+      endX   = endX   / 2.0;
+      }
+
+	var x = endX - startX;
+    var y = cmd.param.xyz[this.axisXYZ_1] - this.position[this.axisXYZ_1];
+
+	var z = cmd.param.xyz[this.axisXYZ_linear];
+	var i,j;
+  
 	if (cmd.param.r !== undefined)
 	{
 		cmd.param.r *= this.modal.units;
@@ -232,7 +232,8 @@ CWS.Interpreter.prototype.g2  = function (cmd)
 		if (h_x2_div_d < 0)
 			throw new CWS.ErrorParser(cmd.line.lineNumber,"Wrong radius",cmd.line.rawLine);
 		h_x2_div_d = Math.sqrt(h_x2_div_d)/Math.sqrt(d2)*this.invertRadius;
-		
+		// // Invert the sign of h_x2_div_d if the circle is counter clockwise (see sketch below)
+		// if (gc_block.modal.motion == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d; }  
 		if (cmd.param.r < 0) 
 		{ 
             h_x2_div_d = -h_x2_div_d; 
@@ -242,17 +243,18 @@ CWS.Interpreter.prototype.g2  = function (cmd)
         cmd.param.ijk[this.axisIJK_1] = 0.5*(y-(x*h_x2_div_d));
 	}
 
-	// ✅ CORREÇÃO: Calcular centro com posição atual
-	var center_axis0 = this.position[this.axisXYZ_0] + cmd.param.ijk[this.axisIJK_0] * (this.plane_select === 18 ? 2.0 : 1.0);
+	var center_axis0 = startX + cmd.param.ijk[this.axisIJK_0];
   	var center_axis1 = this.position[this.axisXYZ_1] + cmd.param.ijk[this.axisIJK_1];
-  	var r_axis0 = -cmd.param.ijk[this.axisIJK_0] * (this.plane_select === 18 ? 2.0 : 1.0);
+  	var r_axis0 = -cmd.param.ijk[this.axisIJK_0];  // Radius vector from center to current location
   	var r_axis1 = -cmd.param.ijk[this.axisIJK_1];
-  	var rt_axis0 = targetX - center_axis0;
-  	var rt_axis1 = targetY - center_axis1;
+  	var rt_axis0 = cmd.param.xyz[this.axisXYZ_0] - center_axis0;
+  	var rt_axis1 = cmd.param.xyz[this.axisXYZ_1] - center_axis1;
 
   	arc_tolerance=0.0002 // mm
 
   	angular_travel = Math.atan2(r_axis0*rt_axis1-r_axis1*rt_axis0, r_axis0*rt_axis0+r_axis1*rt_axis1);
+  	// if (angular_travel >= -5e-7) 
+  	// 	angular_travel -= 2*Math.PI;
 
   	segments = Math.floor(Math.abs(0.5*angular_travel*cmd.param.r)/
                           Math.sqrt(arc_tolerance*(2*cmd.param.r-arc_tolerance)) );
@@ -269,22 +271,38 @@ CWS.Interpreter.prototype.g2  = function (cmd)
     var i;
     var count = 0;
 
+	 //    var l={	x0:this.position.x,x1:center_axis0,
+	// 		z0:this.position.z,z1:center_axis1}
+	// 	l.ctype='r';
+	// 	l.cmd=cmd;
+	// 	this.outputCommands.push(l);
+	// var l={	x0:cmd.param.xyz.x,x1:center_axis0,
+	// 		z0:cmd.param.xyz.z,z1:center_axis1}
+	// 	l.ctype='r';
+	// 	l.cmd=cmd;
+	// 	this.outputCommands.push(l);
+
+
+
     for (i = 1; i<segments; i++) 
-    { 
+    { // Increment (segments-1).
+      
       if (count < this.N_ARC_CORRECTION) 
       {
+        // Apply vector rotation matrix. ~40 usec
         r_axisi = r_axis0*sin_T + r_axis1*cos_T;
         r_axis0 = r_axis0*cos_T - r_axis1*sin_T;
         r_axis1 = r_axisi;
         count++;
       } 
       else 
-      {
+      {      
+        // Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments. ~375 usec
+        // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
         cos_Ti = Math.cos(i*theta_per_segment);
         sin_Ti = Math.sin(i*theta_per_segment);
         r_axis0 = -cmd.param.ijk[this.axisIJK_0]*cos_Ti + cmd.param.ijk[this.axisIJK_1]*sin_Ti;
         r_axis1 = -cmd.param.ijk[this.axisIJK_0]*sin_Ti - cmd.param.ijk[this.axisIJK_1]*cos_Ti;
-        if (this.plane_select === 18) r_axis0 *= 2.0;
         count = 0;
       }
   		
@@ -304,8 +322,8 @@ CWS.Interpreter.prototype.g2  = function (cmd)
 		this.outputCommands.push(l);
     }
 
-    var l={	x0:this.position.x,x1:targetX,
-    		y0:this.position.y,y1:targetY,
+    var l={	x0:this.position.x,x1:cmd.param.xyz.x,
+    		y0:this.position.y,y1:cmd.param.xyz.y,
 			z0:this.position.z,z1:cmd.param.xyz.z}
 		this.position.x=l.x1;
 		this.position.y=l.y1;
@@ -314,8 +332,8 @@ CWS.Interpreter.prototype.g2  = function (cmd)
 		l.cmd=cmd;
 		this.outputCommands.push(l);
 
-  	this.position.x=targetX;
-  	this.position.y=targetY;
+  	this.position.x=cmd.param.xyz.x;
+  	this.position.y=cmd.param.xyz.y;
 	this.position.z=cmd.param.xyz.z;
 	};
 
@@ -324,20 +342,20 @@ CWS.Interpreter.prototype.g3  = function (cmd)
 	if (this.move3dPrinter(cmd))
 		return;
 	this.coordinatesToAbsolute(cmd);
-	
-	// ✅ CORREÇÃO: Armazenar valores originais
-	var targetX = cmd.param.xyz[this.axisXYZ_0];
-	var targetY = cmd.param.xyz[this.axisXYZ_1];
-	
-	// Calcular diferenças
-	var x = targetX - this.position[this.axisXYZ_0];
-	var y = targetY - this.position[this.axisXYZ_1];
+
+	// ===== TORNO (G18): usar raio APENAS para cálculo =====
+    var startX = this.position[this.axisXYZ_0];
+    var endX   = cmd.param.xyz[this.axisXYZ_0];
+
+    if (this.plane_select === 18) {
+      startX = startX / 2.0;
+      endX   = endX   / 2.0;
+      }
+
+	var x = endX - startX;
+    var y = cmd.param.xyz[this.axisXYZ_1] - this.position[this.axisXYZ_1];
 	var z = cmd.param.xyz[this.axisXYZ_linear];
-	
-	// ✅ CORREÇÃO: Para torno (G18), X é diâmetro - converter APENAS para cálculo do centro
-	if (this.plane_select === 18) {
-		x = x / 2.0;
-	}
+	var i,j;
 
 	if (cmd.param.r !== undefined)
 	{
@@ -347,7 +365,8 @@ CWS.Interpreter.prototype.g3  = function (cmd)
 		if (h_x2_div_d < 0)
 			throw new CWS.ErrorParser(cmd.line.lineNumber,"Wrong radius",cmd.line.rawLine);
 		h_x2_div_d = -Math.sqrt(h_x2_div_d)/Math.sqrt(d2)*this.invertRadius;
-		
+		// // Invert the sign of h_x2_div_d if the circle is counter clockwise (see sketch below)
+		// if (gc_block.modal.motion == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d; }  
 		if (cmd.param.r < 0) 
 		{ 
             h_x2_div_d = -h_x2_div_d; 
@@ -356,18 +375,19 @@ CWS.Interpreter.prototype.g3  = function (cmd)
         cmd.param.ijk[this.axisIJK_0] = 0.5*(x+(y*h_x2_div_d));
         cmd.param.ijk[this.axisIJK_1] = 0.5*(y-(x*h_x2_div_d));
 	}
-
-	// ✅ CORREÇÃO: Calcular centro com posição atual
-	var center_axis0 = this.position[this.axisXYZ_0] + cmd.param.ijk[this.axisIJK_0] * (this.plane_select === 18 ? 2.0 : 1.0);
+    
+	var center_axis0 = this.position[this.axisXYZ_0] + cmd.param.ijk[this.axisIJK_0];
   	var center_axis1 = this.position[this.axisXYZ_1] + cmd.param.ijk[this.axisIJK_1];
-  	var r_axis0 = -cmd.param.ijk[this.axisIJK_0] * (this.plane_select === 18 ? 2.0 : 1.0);
+  	var r_axis0 = -cmd.param.ijk[this.axisIJK_0];  // Radius vector from center to current location
   	var r_axis1 = -cmd.param.ijk[this.axisIJK_1];
-  	var rt_axis0 = targetX - center_axis0;
-  	var rt_axis1 = targetY - center_axis1;
+  	var rt_axis0 = cmd.param.xyz[this.axisXYZ_0] - center_axis0;
+  	var rt_axis1 = cmd.param.xyz[this.axisXYZ_1] - center_axis1;
 
   	arc_tolerance=0.0002 // mm
 
   	angular_travel = Math.atan2(r_axis0*rt_axis1-r_axis1*rt_axis0, r_axis0*rt_axis0+r_axis1*rt_axis1);
+  	// if (angular_travel >= -5e-7) 
+  	// 	angular_travel -= 2*Math.PI;
 
   	segments = Math.floor(Math.abs(0.5*angular_travel*cmd.param.r)/
                           Math.sqrt(arc_tolerance*(2*cmd.param.r-arc_tolerance)) );
@@ -384,22 +404,38 @@ CWS.Interpreter.prototype.g3  = function (cmd)
     var i;
     var count = 0;
 
+	 //    var l={	x0:this.position.x,x1:center_axis0,
+	// 		z0:this.position.z,z1:center_axis1}
+	// 	l.ctype='r';
+	// 	l.cmd=cmd;
+	// 	this.outputCommands.push(l);
+	// var l={	x0:cmd.param.xyz.x,x1:center_axis0,
+	// 		z0:cmd.param.xyz.z,z1:center_axis1}
+	// 	l.ctype='r';
+	// 	l.cmd=cmd;
+	// 	this.outputCommands.push(l);
+
+
+
     for (i = 1; i<segments; i++) 
-    { 
+    { // Increment (segments-1).
+      
       if (count < this.N_ARC_CORRECTION) 
       {
+        // Apply vector rotation matrix. ~40 usec
         r_axisi = r_axis0*sin_T + r_axis1*cos_T;
         r_axis0 = r_axis0*cos_T - r_axis1*sin_T;
         r_axis1 = r_axisi;
         count++;
       } 
       else 
-      {
+      {      
+        // Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments. ~375 usec
+        // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
         cos_Ti = Math.cos(i*theta_per_segment);
         sin_Ti = Math.sin(i*theta_per_segment);
         r_axis0 = -cmd.param.ijk[this.axisIJK_0]*cos_Ti + cmd.param.ijk[this.axisIJK_1]*sin_Ti;
         r_axis1 = -cmd.param.ijk[this.axisIJK_0]*sin_Ti - cmd.param.ijk[this.axisIJK_1]*cos_Ti;
-        if (this.plane_select === 18) r_axis0 *= 2.0;
         count = 0;
       }
   		
@@ -419,8 +455,8 @@ CWS.Interpreter.prototype.g3  = function (cmd)
 		this.outputCommands.push(l);
     }
 
-    var l={	x0:this.position.x,x1:targetX,
-    		y0:this.position.y,y1:targetY,
+    var l={	x0:this.position.x,x1:cmd.param.xyz.x,
+    		y0:this.position.y,y1:cmd.param.xyz.y,
 			z0:this.position.z,z1:cmd.param.xyz.z}
 		this.position.x=l.x1;
 		this.position.y=l.y1;
@@ -429,8 +465,8 @@ CWS.Interpreter.prototype.g3  = function (cmd)
 		l.cmd=cmd;
 		this.outputCommands.push(l);
 
-  	this.position.x=targetX;
-  	this.position.y=targetY;
+  	this.position.x=cmd.param.xyz.x;
+  	this.position.y=cmd.param.xyz.y;
 	this.position.z=cmd.param.xyz.z;
 	};
 
