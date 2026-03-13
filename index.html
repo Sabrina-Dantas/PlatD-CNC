@@ -34,7 +34,7 @@
     <script src="js/motion.js"></script>
 	<script src="js/controller.js"></script>
 	<script src="js/ui.js"></script>
-
+ 
 <style>
 #exerciseWindow {
     display: none;
@@ -152,7 +152,7 @@
 }
 .btn-coder { background:#377b2f; color:#fff; }
 .btn-close { background:#4b190d; color:#fff; }
-
+ 
 /* Test container */
 #testContainer {
     display: none;
@@ -201,17 +201,17 @@
     font-family: monospace;
     font-size: 13px;
     white-space: pre-line;
-
+ 
     /* --- ADIÇÕES PARA A CAIXA VERDE --- */
     background: #0e1b0c;    /* fundo verde */
     padding: 10px;
     border-radius: 8px;
     overflow-y: auto;        /* permite rolar dentro da caixa */
 }
-
+ 
 .line-error { color: rgb(255, 36, 36); }
 .line-correct { color: #00ff00; }
-
+ 
 /* ======== ADIÇÕES: menu File + status message + modal ======== */
 /* ======== File Menu (estilo aprimorado) ======== */
 #fileMenu {
@@ -229,7 +229,7 @@
   font-family: inherit;
   animation: dropdownFade 0.2s ease;
 }
-
+ 
 #fileMenu::before {
   content: "";
   position: absolute;
@@ -239,7 +239,7 @@
   border-style: solid;
   border-color: transparent transparent #1e1b1b transparent;
 }
-
+ 
 #fileMenu button {
   display: block;
   width: 100%;
@@ -252,17 +252,17 @@
   font-weight: 600;
   transition: background 0.2s ease, transform 0.1s ease;
 }
-
+ 
 #fileMenu button:hover {
   background: linear-gradient(#132511, #375020ff);
   transform: translateX(2px);
 }
-
+ 
 #fileMenu button:active {
   transform: translateY(1px);
   background: #264422;
 }
-
+ 
 @keyframes dropdownFade {
   from {
     opacity: 0;
@@ -273,7 +273,7 @@
     transform: translateY(0);
   }
 }
-
+ 
 /* Modal confirm */
 #saveConfirmModal {
   display: none;
@@ -295,7 +295,7 @@
 #saveConfirmModal button { padding:8px 12px; border-radius:6px; border:none; font-weight:700; cursor:pointer; }
 #saveConfirmModal .saveBtn { background:#005c00; color:#fff; }
 #saveConfirmModal .dontSaveBtn { background:#555; color:#fff; }
-
+ 
 /* ======== About Window ======== */
 #aboutWindow {
   display: none;
@@ -343,101 +343,79 @@
 #aboutContent ul {
   margin-left: 18px;
 }
-
-/* ======== JANELA FLUTUANTE DO TUTORIAL ======== */
-#tutorialFloating {
+ 
+/* ======== Tutorial Modal — arrastável e redimensionável ======== */
+#tutorialModal {
     display: none;
-    position: fixed;          /* fixed = sempre visível, ignora scroll */
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 760px;
-    min-width: 280px;
-    min-height: 180px;
+    position: absolute;
     background: #1e1b1b;
-    border: 1px solid #375020;
+    border: 1px solid #333;
     border-radius: 10px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.85);
-    /* z-index altíssimo — acima do editor ACE, Three.js canvas e tudo mais */
-    z-index: 2147483647;
+    box-shadow: 0 10px 30px #132511;
+    z-index: 99999;
     overflow: hidden;
-    box-sizing: border-box;
-    /* isolation cria novo contexto de empilhamento ACIMA de qualquer transform dos filhos */
-    isolation: isolate;
+    min-width: 320px;
+    min-height: 220px;
 }
-
-/* Barra de título — área de arrastar */
-#tutorialHandle {
+ 
+/* Header para arrastar */
+#tutorialHeader {
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(#132511, #375020);
-    padding: 6px 10px;
-    cursor: grab;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: none;        /* necessário para drag por toque no mobile */
-}
-#tutorialHandle:active { cursor: grabbing; }
-
-#tutorialHandle span {
+    background: linear-gradient(#132511, #375020ff);
+    border-bottom: 1px solid #2b2b2b;
+    font-weight: 600;
     color: #eee;
-    font-weight: 700;
-    font-size: 13px;
-    pointer-events: none;
+    padding: 0 10px;
+    cursor: move;
+    user-select: none;
 }
-
-/* Botão fechar */
+ 
+#tutorialContent {
+    background: #1e1b1b;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: calc(100% - 36px);
+    box-sizing: border-box;
+}
+ 
+/* Botão X */
 #closeTutorial {
     background: #4b0d0d;
     color: #fff;
-    border: none;
-    border-radius: 4px;
     padding: 4px 10px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
-    cursor: pointer;
     line-height: 1;
-    touch-action: manipulation;
-    transition: background 0.2s;
-    flex-shrink: 0;
-}
-#closeTutorial:hover { background: #6a1515; }
-
-/* Corpo do vídeo */
-#tutorialBody {
-    padding: 8px;
-    box-sizing: border-box;
-}
-
-#tutorialVideo {
-    display: block;
-    width: 100%;
-    height: auto;
+    border: none;
     border-radius: 6px;
-    background: #000;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
 }
-
-/* Alça de redimensionar (canto inferior direito) */
-#tutorialResizeHandle {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    cursor: nwse-resize;
-    touch-action: none;
-    /* triângulo visual */
-    background: linear-gradient(135deg, transparent 50%, #375020 50%);
-    border-bottom-right-radius: 10px;
+#closeTutorial:hover {
+    background: #6a1515;
+    transform: scale(1.1);
 }
-
-/* ======== FIM JANELA FLUTUANTE ======== 
-
+ 
+/* Vídeo responsivo */
+#tutorialVideo {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+}
+ 
+/* ======== FIM ADIÇÕES ======== */
+ 
 .dg .close-button { display: none !important; } /*Ocultar Open Control*/
-
+ 
 /* ================= SCROLL FIX MOBILE ================= */
-
+ 
 /* Permite rolagem por toque */
 #exerciseList,
 #exerciseViewer,
@@ -447,7 +425,7 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
-
+ 
 /* Corrige scroll no container principal no celular */
 @media (max-width: 600px) {
     #exerciseContent {
@@ -455,14 +433,28 @@
         -webkit-overflow-scrolling: touch;
     }
 }
-
-
+ 
+ 
 </style>
-
+ 
 </head>
 <body>
 <div id="editor"></div>
 <div id="topMenu">
+    <!-- Modal do Tutorial — agora arrastável e redimensionável -->
+<div id="tutorialModal">
+    <div id="tutorialHeader">
+        <span>Tutorial</span>
+        <button id="closeTutorial">&times;</button>
+    </div>
+    <div id="tutorialContent">
+        <!-- Vídeo MP4 -->
+        <video id="tutorialVideo" width="720" controls>
+            <source src="images/Plat - CNC.mp4" type="video/mp4">
+        </video>
+    </div>
+</div>
+ 
 <nav>
     <ul>
         <li><div id="fileButton"><span title="Arquivo" class="icon icon-folder-open"></span>Arquivo</div></li>
@@ -476,9 +468,9 @@
     <img src="images/iconiff.jpg" style="width: 50px;height:36px;"> 
 </span>
 <!--simbolo do if-->
-
+ 
 </div>
-
+ 
 <!-- File menu dropdown -->
 <div id="fileMenu">
     <button id="newFile">Novo</button>
@@ -486,17 +478,17 @@
     <button id="openFile">Abrir</button>
     <input type="file" id="fileInputFallback" accept=".txt" style="display:none" />
 </div>
-
+ 
 <div id="canvasContainer">
     <div id="messages"></div>
 </div>
-
+ 
 <div id="exerciseWindow">
     <div class="cwsx-header">
         <div class="cwsx-title">Exercícios</div>
         <button id="closeExercise">X</button>
     </div>
-
+ 
     <div id="exerciseContent">
         <div id="exerciseList">
             <button class="exerciseBtn" data-ex="1">Exercício 1 (✮☆☆☆)</button>
@@ -510,20 +502,20 @@
             <button class="exerciseBtn" data-ex="9">Exercício 9 (✮✮✮✮)</button>
             <button class="exerciseBtn" data-ex="10">Exercício 10 (✮✮✮✮)</button>
         </div>
-
+ 
         <div id="exerciseViewer">
             <h3 id="exerciseTitle">Selecione um exercício</h3>
             <div id="imageWrap">
                 <img id="exerciseImage" src="" alt="Exercise Image">
                 <img id="answerImage" src="" alt="Answer Image">
             </div>
-
+ 
             <div class="viewer-buttons">
                 <button id="viewCoder" class="btn-coder">Código</button>
                 <button id="viewTest" class="btn-coder">Testar</button>
                <!-- <button id="closeViewer" class="btn-close">Close</button>-->
             </div>
-
+ 
             <div id="testContainer">
                 <label for="modeSelect">Selecione o modo utilizado:</label>
                 <select id="modeSelect">
@@ -540,10 +532,10 @@
         </div>
     </div>
 </div>
-
+ 
 <!-- status message -->
 <div id="statusMessage"></div>
-
+ 
 <!-- save confirm modal -->
 <div id="saveConfirmModal" role="dialog" aria-modal="true">
   <p>Você gostaria de salvar o G-Code?</p>
@@ -552,7 +544,7 @@
     <button class="dontSaveBtn" id="modalDontSaveBtn">Não Salvar</button>
   </div>
 </div>
-
+ 
 <script>
 var controller, ui;
 window.addEventListener("load", (function () {
@@ -563,15 +555,15 @@ window.addEventListener("load", (function () {
         new CWS.Motion(),
         true
     );
-
+ 
     ui = new CWS.UI(controller);
     var stats = ui.createStats(true);
-
+ 
     function onWindowResize() {
         controller.windowResize();
         ui.resize();
     }
-
+ 
     function animate() {
         requestAnimationFrame( animate );
         stats.update();
@@ -579,10 +571,10 @@ window.addEventListener("load", (function () {
         controller.render();
     }
     animate();
-
+ 
     window.addEventListener( 'resize', onWindowResize, false );
     controller.runInterpreter();
-
+ 
     // helper: show status
     function showStatus(msg, isError){
         const s = document.getElementById("statusMessage");
@@ -592,7 +584,7 @@ window.addEventListener("load", (function () {
         s.style.display = "block";
         setTimeout(()=>{ s.style.display = "none"; }, 2200);
     }
-
+ 
     // File menu toggle
     const fileBtn = document.getElementById("fileButton");
     const fileMenu = document.getElementById("fileMenu");
@@ -603,7 +595,7 @@ window.addEventListener("load", (function () {
     document.addEventListener("click", function(e){
         if(!fileMenu.contains(e.target) && e.target !== fileBtn) fileMenu.style.display = "none";
     });
-
+ 
     // utility to get/set editor content (ACE compatibility)
     function getEditorContent(){
         try{
@@ -621,51 +613,51 @@ window.addEventListener("load", (function () {
         }catch(e){ console.warn(e); }
         return false;
     }
-
+ 
     // ===== Salvamento universal com nome personalizado =====
     function saveToFile(defaultName = "gcode.txt"){
         const code = getEditorContent() || "";
-
+ 
         if (!code.trim()) {
             showStatus("Nada para salvar.", true);
             return false;
         }
-
+ 
         // Pergunta o nome do arquivo
         let fileName = prompt("Digite o nome do arquivo:", defaultName);
-
+ 
         if (!fileName) {
             showStatus("Salvamento cancelado.", true);
             return false;
         }
-
+ 
         // Garante extensão .txt
         if (!fileName.toLowerCase().endsWith(".txt")) {
             fileName += ".txt";
         }
-
+ 
         const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
         const url = URL.createObjectURL(blob);
-
+ 
         const a = document.createElement("a");
         a.href = url;
         a.download = fileName;
         a.style.display = "none";
-
+ 
         document.body.appendChild(a);
         a.click();
-
+ 
         setTimeout(() => {
             URL.revokeObjectURL(url);
             document.body.removeChild(a);
         }, 100);
-
+ 
         showStatus(`Arquivo "${fileName}" exportado.`);
         return true;
     }
-
-
-
+ 
+ 
+ 
     // Open with File System Access API if available, else fallback to input
     async function openFromFile(){
         if(window.showOpenFilePicker){
@@ -709,31 +701,31 @@ window.addEventListener("load", (function () {
             });
         }
     }
-
+ 
     // Bind Save/Open/New
     document.getElementById("saveFile").addEventListener("click", async function(e){
         e.stopPropagation();
         fileMenu.style.display = "none";
         await saveToFile("");
     });
-
+ 
     document.getElementById("openFile").addEventListener("click", async function(e){
         e.stopPropagation();
         fileMenu.style.display = "none";
         await openFromFile();
     });
-
+ 
     // New: show modal asking to save
     const modal = document.getElementById("saveConfirmModal");
     const modalSaveBtn = document.getElementById("modalSaveBtn");
     const modalDontSaveBtn = document.getElementById("modalDontSaveBtn");
-
+ 
     document.getElementById("newFile").addEventListener("click", function(e){
         e.stopPropagation();
         fileMenu.style.display = "none";
         modal.style.display = "block";
     });
-
+ 
     modalSaveBtn.addEventListener("click", async function(){
         modal.style.display = "none";
         const ok = await saveToFile("");
@@ -741,21 +733,21 @@ window.addEventListener("load", (function () {
         setEditorContent("");
         showStatus("Editor limpo.");
     });
-
+ 
     modalDontSaveBtn.addEventListener("click", function(){
         modal.style.display = "none";
         setEditorContent("");
         showStatus("Editor limpo.");
     });
-
-
+ 
+ 
     // rest of original bindings (exercises etc.) kept intact
     $("#exerciseWindow").draggable({ handle: ".cwsx-header" }).resizable({
         minWidth: 320,
         minHeight: 200,
         alsoResize: "#exerciseViewer, #imageWrap, #testContainer"
     });
-
+ 
     $("#openExercises").on("click", function(){
         $("#exerciseWindow").fadeIn();
     });
@@ -765,7 +757,7 @@ window.addEventListener("load", (function () {
     $("#exerciseWindow").on("click", "#closeViewer", function(){
         closeExerciseWindow();
     });
-
+ 
     function closeExerciseWindow(){
         $("#exerciseWindow").fadeOut();
         $("#exerciseTitle").text("Selecione um exercício");
@@ -773,14 +765,14 @@ window.addEventListener("load", (function () {
         $("#testContainer").hide();
         $(".viewer-buttons").show();
     }
-
+ 
     function setImage($img, path){
         $img.off("error").attr("src", path);
     }
-
+ 
     var currentEx = null;
     var showingAnswer = false;
-
+ 
     $(document).on("click", ".exerciseBtn", function(){
         currentEx = $(this).data("ex");
         showingAnswer = false;
@@ -791,7 +783,7 @@ window.addEventListener("load", (function () {
         $("#testContainer").hide();
         $(".viewer-buttons").show();
     });
-
+ 
     $("#exerciseWindow").on("click", "#viewCoder", function(){
         if(!currentEx) return;
         if(showingAnswer){
@@ -807,7 +799,7 @@ window.addEventListener("load", (function () {
             showingAnswer = true;
         }
     });
-
+ 
 const gabaritos = {
 	"1": {"G90": `G1 X60 Z0;\nG1 X60 Z-30;\nG1 X80 Z-30;\nG1 X80 Z-50;\nG1 X100 Z-50;\nG1 X100 Z-120;`,
         "G91": `G1 X60 Z0;\nG1 X0 Z-30;\nG1 X20 Z0;\nG1 X0 Z-20;\nG1 X20 Z0;\nG1 X0 Z-70;`},
@@ -830,7 +822,7 @@ const gabaritos = {
     "10": {"G90": `G1 X22 Z0;\nG1 X30 Z-4;\nG1 X30 Z-10;\nG2 X30 Z-25.08 R13;\nG1 X30 Z-32.08;\nG1 X40 Z-32.08;\nG1 X40 Z-44.08;\nG2 X50 Z-49.08 R5;\nG1 X50 Z-79.08;`,
          "G91": `G1 X22 Z0;\nG1 X8 Z-4;\nG1 X0 Z-6;\nG2 X0 Z-15.08 R13;\nG1 X0 Z-7;\nG1 X10 Z0;\nG1 X0 Z-12;\nG2 X10 Z-5 R5;\nG1 X0 Z-30;`}
 };
-
+ 
     $("#viewTest").on("click", function() {
         $("#exerciseImage, #answerImage").hide();
         $(".viewer-buttons").hide();
@@ -839,7 +831,7 @@ const gabaritos = {
         $("#userGcode").val("");
         $("#testFeedback").html("");
     });
-
+ 
     $("#backButton").on("click", function() {
         $("#testContainer").hide();
         $(".viewer-buttons").show();
@@ -851,7 +843,7 @@ const gabaritos = {
             $("#answerImage").hide();
         }
     });
-
+ 
     $("#checkButton").on("click", function() {
         const ex = currentEx;
         const mode = $("#modeSelect").val();
@@ -860,7 +852,7 @@ const gabaritos = {
         const correctLines = gabaritos[ex][mode].split('\n');
         let feedback = "";
         let display = "";
-
+ 
         userLines.forEach((line,i)=>{
             const uline = line.replace(/\s/g,'');
             const cline = (correctLines[i]||"").replace(/\s/g,'');
@@ -871,7 +863,7 @@ const gabaritos = {
                 display += `<div>${line}</div>`;
             }
         });
-
+ 
         if(userCode.replace(/\s/g,'') === gabaritos[ex][mode].replace(/\s/g,'')){
             feedback = "✅O código está correto. Muito bem!";
             $("#testFeedback").html(feedback);
@@ -880,10 +872,10 @@ const gabaritos = {
             $("#testFeedback").html(feedback + "<br>" + display);
         }
     });
-
+ 
 })); // end load listener
 </script>
-
+ 
 <!-- ===== Verificação Instantânea de Código G — Versão Interface Segura ===== -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -894,12 +886,12 @@ document.addEventListener("DOMContentLoaded", function () {
     else if (window.controller?.editor) aceEditor = window.controller.editor;
     else if (window.editor) aceEditor = window.editor;
     else if (window.ace?.edit) aceEditor = ace.edit(document.querySelector(".ace_editor"));
-
+ 
     if (!aceEditor) {
       console.warn("❌ Nenhum editor ACE encontrado. Verificação não ativada.");
       return;
     }
-
+ 
     // Cria o painel de feedback dentro do canvasContainer (em baixo do desenho)
     const canvasContainer = document.getElementById("canvasContainer");
     const feedbackDiv = document.createElement("div");
@@ -918,42 +910,42 @@ document.addEventListener("DOMContentLoaded", function () {
     feedbackDiv.style.whiteSpace = "pre-line";
     feedbackDiv.style.display = "none";
     feedbackDiv.style.zIndex = "99999";
-
+ 
     canvasContainer.appendChild(feedbackDiv);
-
+ 
     // Função de validação
     function validarGCode(code) {
   const linhas = code.split("\n");
   const avisos = [];
-
+ 
   // Comandos permitidos e letras válidas
   const letrasValidas = ["G", "X", "Y", "Z", "R", "M"];
-
+ 
   for (let i = 0; i < linhas.length; i++) {
     const linhaOriginal = linhas[i];
     const linha = linhaOriginal.trim();
-
+ 
     if (!linha) continue;
-
+ 
     // Extrai as partes: G1 X10 Y20, G1X50, etc.
     const partes = linha.match(/[A-Za-z][0-9\.\-]*/g) || [];
-
+ 
     // Se não tiver G no início → inválido
     if (!/^G\d+/i.test(linha)) {
       avisos.push(`⚠️ Linha ${i + 1}: comando inválido → "${linhaOriginal}"`);
       continue;
     }
-
+ 
     // Verifica cada parte da linha
     for (const parte of partes) {
       const letra = parte[0].toUpperCase();
-
+ 
       // Se tiver letra não permitida → erro
       if (!letrasValidas.includes(letra)) {
         avisos.push(`⚠️ Linha ${i + 1}: parâmetro inválido "${letra}"`);
         break;
       }
-
+ 
       // Se a letra tiver que ter número e não tiver, erro
       if (["X", "Y", "Z", "R"].includes(letra)) {
         const numero = parte.slice(1);
@@ -964,16 +956,16 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   }
-
+ 
   return avisos;
 }
-
-
+ 
+ 
     // Atualiza o painel
     function atualizarFeedback() {
       const codigo = aceEditor.getValue ? aceEditor.getValue() : "";
       const avisos = validarGCode(codigo);
-
+ 
       if (avisos.length > 0) {
         feedbackDiv.innerHTML = avisos.join("<br>");
         feedbackDiv.style.display = "block";
@@ -982,152 +974,54 @@ document.addEventListener("DOMContentLoaded", function () {
         feedbackDiv.innerHTML = "";
       }
     }
-
+ 
     // Observa mudanças no código
     if (aceEditor.session?.on) aceEditor.session.on("change", atualizarFeedback);
     else if (aceEditor.on) aceEditor.on("change", atualizarFeedback);
-
+ 
     console.log("✅ Verificação instantânea ativada (versão visual segura)");
   }, 2000);
 });
-
-// ======== JANELA FLUTUANTE DO TUTORIAL ========
-(function () {
-    // Cria a janela e injeta como ÚLTIMO filho do body
-    // (último filho = topo da pilha de renderização — garante ficar acima de tudo)
-    const win = document.createElement("div");
-    win.id = "tutorialFloating";
-    win.innerHTML = `
-        <div id="tutorialHandle">
-            <span>▶ Tutorial — PlatD-CNC</span>
-            <button id="closeTutorial">&times;</button>
-        </div>
-        <div id="tutorialBody">
-            <video id="tutorialVideo" controls>
-                <source src="images/Plat - CNC.mp4" type="video/mp4">
-            </video>
-        </div>
-        <div id="tutorialResizeHandle"></div>
-    `;
-    document.body.appendChild(win);   // << ÚLTIMO no DOM = acima de tudo
-
-    const video = win.querySelector("#tutorialVideo");
-
-    // --- Abrir ---
-    document.querySelector("li div span[title='Tutorial']").parentElement
-        .addEventListener("click", function () {
-            // Centraliza na viewport ao abrir
-            const vw = window.innerWidth, vh = window.innerHeight;
-            const w = Math.min(760, vw - 20);
-            win.style.width  = w + "px";
-            win.style.left   = Math.round((vw - w) / 2) + "px";
-            win.style.top    = "60px";
-            win.style.transform = "none";
-            win.style.display = "block";
-            video.currentTime = 0;
-            video.play();
+ 
+// Clicar no botão TUTORIAL
+document.querySelector("li div span[title='Tutorial']").parentElement.addEventListener("click", function () {
+    const modal = document.getElementById("tutorialModal");
+    const video = document.getElementById("tutorialVideo");
+ 
+    // Posiciona no centro da tela ao abrir (apenas na primeira vez)
+    if (!modal._positioned) {
+        modal.style.left = Math.max(0, (window.innerWidth - 760) / 2) + "px";
+        modal.style.top = Math.max(0, (window.innerHeight - 480) / 2) + "px";
+        modal.style.width = "760px";
+        modal.style.height = "480px";
+        modal._positioned = true;
+    }
+ 
+    modal.style.display = "block";
+    video.currentTime = 0;
+    video.play();
+});
+ 
+// Fechar ao clicar no X
+document.getElementById("closeTutorial").addEventListener("click", function () {
+    const modal = document.getElementById("tutorialModal");
+    const video = document.getElementById("tutorialVideo");
+ 
+    modal.style.display = "none";
+    video.pause();
+});
+ 
+// === Tutorial draggable + resizable via jQuery UI ===
+document.addEventListener("DOMContentLoaded", function () {
+    $(function () {
+        $("#tutorialModal").draggable({ handle: "#tutorialHeader" }).resizable({
+            minWidth: 320,
+            minHeight: 220,
+            alsoResize: "#tutorialVideo"
         });
-
-    // --- Fechar ---
-    win.querySelector("#closeTutorial").addEventListener("click", function (e) {
-        e.stopPropagation();
-        win.style.display = "none";
-        video.pause();
     });
-
-    // ============================================================
-    // DRAG — arrastar pela barra de título (mouse + touch)
-    // ============================================================
-    const handle = win.querySelector("#tutorialHandle");
-    let dragging = false, startX, startY, origLeft, origTop;
-
-    function dragStart(cx, cy) {
-        dragging = true;
-        startX = cx;
-        startY = cy;
-        origLeft = win.offsetLeft;
-        origTop  = win.offsetTop;
-        handle.style.cursor = "grabbing";
-    }
-    function dragMove(cx, cy) {
-        if (!dragging) return;
-        let nx = origLeft + (cx - startX);
-        let ny = origTop  + (cy - startY);
-        // Manter dentro da viewport
-        nx = Math.max(0, Math.min(window.innerWidth  - win.offsetWidth,  nx));
-        ny = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, ny));
-        win.style.left = nx + "px";
-        win.style.top  = ny + "px";
-    }
-    function dragEnd() {
-        dragging = false;
-        handle.style.cursor = "grab";
-    }
-
-    // Mouse
-    handle.addEventListener("mousedown",  e => { e.preventDefault(); dragStart(e.clientX, e.clientY); });
-    document.addEventListener("mousemove", e => dragMove(e.clientX, e.clientY));
-    document.addEventListener("mouseup",   () => dragEnd());
-
-    // Touch
-    handle.addEventListener("touchstart", e => {
-        const t = e.touches[0];
-        dragStart(t.clientX, t.clientY);
-    }, { passive: true });
-    document.addEventListener("touchmove", e => {
-        if (!dragging) return;
-        e.preventDefault();
-        const t = e.touches[0];
-        dragMove(t.clientX, t.clientY);
-    }, { passive: false });
-    document.addEventListener("touchend", () => dragEnd());
-
-    // ============================================================
-    // RESIZE — alça no canto inferior direito (mouse + touch)
-    // ============================================================
-    const resizeHandle = win.querySelector("#tutorialResizeHandle");
-    let resizing = false, rsStartX, rsStartY, rsOrigW, rsOrigH;
-
-    function resizeStart(cx, cy) {
-        resizing = true;
-        rsStartX = cx;
-        rsStartY = cy;
-        rsOrigW  = win.offsetWidth;
-        rsOrigH  = win.offsetHeight;
-    }
-    function resizeMove(cx, cy) {
-        if (!resizing) return;
-        const newW = Math.max(280, rsOrigW + (cx - rsStartX));
-        const newH = Math.max(180, rsOrigH + (cy - rsStartY));
-        // Não ultrapassar viewport
-        const maxW = window.innerWidth  - win.offsetLeft;
-        const maxH = window.innerHeight - win.offsetTop;
-        win.style.width  = Math.min(newW, maxW) + "px";
-        win.style.height = Math.min(newH, maxH) + "px";
-    }
-    function resizeEnd() { resizing = false; }
-
-    // Mouse
-    resizeHandle.addEventListener("mousedown",  e => { e.preventDefault(); e.stopPropagation(); resizeStart(e.clientX, e.clientY); });
-    document.addEventListener("mousemove", e => resizeMove(e.clientX, e.clientY));
-    document.addEventListener("mouseup",   () => resizeEnd());
-
-    // Touch
-    resizeHandle.addEventListener("touchstart", e => {
-        e.stopPropagation();
-        const t = e.touches[0];
-        resizeStart(t.clientX, t.clientY);
-    }, { passive: true });
-    document.addEventListener("touchmove", e => {
-        if (!resizing) return;
-        e.preventDefault();
-        const t = e.touches[0];
-        resizeMove(t.clientX, t.clientY);
-    }, { passive: false });
-    document.addEventListener("touchend", () => resizeEnd());
-})();
-// ======== FIM JANELA FLUTUANTE ========
-
+});
+ 
 // === About Window ===
 document.addEventListener("DOMContentLoaded", function() {
   // cria elemento base
@@ -1142,7 +1036,7 @@ document.addEventListener("DOMContentLoaded", function() {
         Plataforma Didática para Simulação em CNC</p>
         
         <p>O PlatD-CNC é uma plataforma educacional online gratuita desenvolvida especificamente para o ensino e aprendizagem de programação CNC através de simulação gráfica em 2D. Nossa ferramenta foca na simulação de operações de torno utilizando código G, proporcionando uma experiência de aprendizado acessível e didática.</p>
-
+ 
         <p><strong>Objetivo</strong><br>
         Esta plataforma foi criada para resolver os principais desafios enfrentados no ensino de CNC:</p>
         <ul>
@@ -1151,7 +1045,7 @@ document.addEventListener("DOMContentLoaded", function() {
           <li>Falta de acesso dos estudantes a ferramentas de prática fora do ambiente acadêmico</li>
           <li>Necessidade de capacitação tanto para estudantes quanto para profissionais da área</li>
         </ul>
-
+ 
         <p><strong>Características Principais</strong></p>
         <ul>
           <li><strong>Interface Intuitiva</strong></li>
@@ -1159,7 +1053,7 @@ document.addEventListener("DOMContentLoaded", function() {
           <li>Três áreas integradas: Exercícios propostos, visualização em tempo real e editor de código G</li>
           <li>Acessibilidade total: Funciona em computadores, tablets e smartphones sem necessidade de instalação</li>
         </ul>
-
+ 
         <p><strong>Metodologia Didática</strong></p>
         <ul>
           <li>Atividades estruturadas: Exercícios organizados por nível de dificuldade</li>
@@ -1167,7 +1061,7 @@ document.addEventListener("DOMContentLoaded", function() {
           <li>Verificação instantânea: Respostas disponíveis para conferência</li>
           <li>Feedback visual: Comparação entre resultado esperado e obtido</li>
         </ul>
-
+ 
         <p><strong>Sistema de Exercícios</strong><br>
         A plataforma conta com 10 exercícios cuidadosamente elaborados e organizados em 4 níveis de dificuldade:</p>
         <ul>
@@ -1180,10 +1074,10 @@ document.addEventListener("DOMContentLoaded", function() {
           <li>⭐⭐⭐⭐ 4 Estrelas - Nível Expert</li>
           <li>Combina interpolações lineares e circulares com cálculos trigonométricos.</li>
         </ul>
-
+ 
         <p><strong>Desenvolvimento Acadêmico</strong><br>
         O PlatD-CNC foi desenvolvido como produto educacional no âmbito do Programa de Pós-Graduação em Ensino da Rede Nordeste de Ensino (RENOEN), linha de pesquisa "Ensino Tecnológico: Práticas e Construções Curriculares".</p>
-
+ 
         <p><strong>Público-Alvo</strong></p>
         <ul>
           <li>Estudantes de cursos técnicos e de engenharia</li>
@@ -1191,53 +1085,53 @@ document.addEventListener("DOMContentLoaded", function() {
           <li>Profissionais da indústria</li>
           <li>Empresas que desejam capacitar funcionários</li>
         </ul>
-
+ 
         <p><strong>Missão</strong><br>
         Democratizar o acesso ao conhecimento em programação CNC, proporcionando uma ferramenta educacional gratuita, de qualidade e acessível, que prepare estudantes e profissionais para os desafios da indústria moderna.</p>
         
         <p><strong>Atualizações</strong><br>
-        1.0 - Implementação do menu “Arquivo”:<br>
+        1.0 - Implementação do menu "Arquivo":<br>
         • Novo: cria um arquivo em branco;<br>
         • Salvar: permite que o usuário salve o código desenvolvido;<br>
         • Abrir: possibilita a abertura de arquivos criados anteriormente.<br>
         1.1 - Implementação de tutorial interativo:<br>
         Guia visual que explica a funcionalidade de cada componente do site.<br>
-        1.2 - Implementação de design responsivo (compatível com celular, tablet e desktop).
+        1.2 - Implementação de design responsivo (compatível com celular, tablet e desktop).
         </p>
         
-
+ 
         <p><strong>Contato</strong><br>
         E-mail: isac.barbosa@ifrn.edu.br</p>
-
+ 
         <p style="text-align:center; margin-top:10px;">
           <em>Desenvolvido no Brasil | IFRN – Campus Mossoró | RENOEN 2023–2027</em>
         </p>
       </div>
     </div>
   `;
-
+ 
   // adiciona no body
   document.body.insertAdjacentHTML("beforeend", aboutHTML);
-
+ 
     // Habilita arrastar e redimensionar (jQuery UI precisa estar carregado)
   $("#aboutWindow").draggable({ handle: ".cwsx-header" }).resizable({
     minWidth: 320,
     minHeight: 200,
     alsoResize: "#aboutContent"
   });
-
+ 
   // evento do botão About
   document.querySelector("li div span[title='Sobre']").parentElement.addEventListener("click", function() {
     $("#aboutWindow").fadeIn();
   });
-
+ 
   // evento para fechar
   $(document).on("click", "#closeAbout", function() {
     $("#aboutWindow").fadeOut();
   });
 });
-
-
+ 
+ 
 </script>
 </body>
 </html>
