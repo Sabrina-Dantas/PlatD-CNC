@@ -344,76 +344,95 @@
   margin-left: 18px;
 }
 
-/* Fundo escuro */
-#tutorialModal {
+/* ======== JANELA FLUTUANTE DO TUTORIAL ======== */
+#tutorialFloating {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.85);
-    z-index: 2147483647; /* máximo possível — fica acima de tudo, inclusive do editor ACE */
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    padding: 16px;
-}
-
-/* Quando visível usa flex para centralizar */
-#tutorialModal[style*="flex"],
-#tutorialModal.ativo {
-    display: flex !important;
-}
-
-/* Caixa do vídeo */
-#tutorialContent {
+    position: fixed;          /* fixed = sempre visível, ignora scroll */
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 760px;
+    min-width: 280px;
+    min-height: 180px;
     background: #1e1b1b;
-    padding: 44px 16px 16px 16px; /* topo maior para o botão X não sobrepor o vídeo */
+    border: 1px solid #375020;
     border-radius: 10px;
-    position: relative;  /* relativo à própria caixa — botão X fica dentro dela */
-    box-shadow: 0 10px 30px #132511;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    max-width: 100%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.85);
+    /* z-index altíssimo — acima do editor ACE, Three.js canvas e tudo mais */
+    z-index: 2147483647;
+    overflow: hidden;
     box-sizing: border-box;
+    /* isolation cria novo contexto de empilhamento ACIMA de qualquer transform dos filhos */
+    isolation: isolate;
 }
 
-/* Botão X — fixo no canto da CAIXA, sempre visível */
+/* Barra de título — área de arrastar */
+#tutorialHandle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(#132511, #375020);
+    padding: 6px 10px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;        /* necessário para drag por toque no mobile */
+}
+#tutorialHandle:active { cursor: grabbing; }
+
+#tutorialHandle span {
+    color: #eee;
+    font-weight: 700;
+    font-size: 13px;
+    pointer-events: none;
+}
+
+/* Botão fechar */
 #closeTutorial {
-    position: absolute;
-    top: 8px;
-    right: 8px;
     background: #4b0d0d;
     color: #fff;
-    padding: 6px 12px;
-    font-size: 20px;
-    font-weight: bold;
-    line-height: 1;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
-    z-index: 10;
-    touch-action: manipulation; /* evita delay de 300ms no mobile */
-    transition: background 0.2s ease, transform 0.1s ease;
+    line-height: 1;
+    touch-action: manipulation;
+    transition: background 0.2s;
+    flex-shrink: 0;
 }
-#closeTutorial:hover {
-    background: #6a1515;
-    transform: scale(1.1);
+#closeTutorial:hover { background: #6a1515; }
+
+/* Corpo do vídeo */
+#tutorialBody {
+    padding: 8px;
+    box-sizing: border-box;
 }
 
-/* Vídeo responsivo */
 #tutorialVideo {
-    max-width: min(720px, 90vw);
-    max-height: 75vh;
-    width: 100%;
-    border-radius: 8px;
     display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    background: #000;
 }
 
-/* ======== FIM ADIÇÕES ======== */
+/* Alça de redimensionar (canto inferior direito) */
+#tutorialResizeHandle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    touch-action: none;
+    /* triângulo visual */
+    background: linear-gradient(135deg, transparent 50%, #375020 50%);
+    border-bottom-right-radius: 10px;
+}
+
+/* ======== FIM JANELA FLUTUANTE ======== 
 
 .dg .close-button { display: none !important; } /*Ocultar Open Control*/
 
@@ -444,19 +463,6 @@
 <body>
 <div id="editor"></div>
 <div id="topMenu">
-    <!-- Modal do Tutorial -->
-<div id="tutorialModal">
-    <div id="tutorialContent">
-        <span id="closeTutorial">&times;</span>
-
-        <!-- Vídeo MP4 -->
-        <video id="tutorialVideo" width="720" controls>
-            <source src="images/Plat - CNC.mp4" type="video/mp4">
-        </video>
-
-    </div>
-</div>
-
 <nav>
     <ul>
         <li><div id="fileButton"><span title="Arquivo" class="icon icon-folder-open"></span>Arquivo</div></li>
@@ -985,33 +991,142 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 2000);
 });
 
-// Clicar no botão TUTORIAL
-document.querySelector("li div span[title='Tutorial']").parentElement.addEventListener("click", function () {
-    const modal = document.getElementById("tutorialModal");
-    const video = document.getElementById("tutorialVideo");
+// ======== JANELA FLUTUANTE DO TUTORIAL ========
+(function () {
+    // Cria a janela e injeta como ÚLTIMO filho do body
+    // (último filho = topo da pilha de renderização — garante ficar acima de tudo)
+    const win = document.createElement("div");
+    win.id = "tutorialFloating";
+    win.innerHTML = `
+        <div id="tutorialHandle">
+            <span>▶ Tutorial — PlatD-CNC</span>
+            <button id="closeTutorial">&times;</button>
+        </div>
+        <div id="tutorialBody">
+            <video id="tutorialVideo" controls>
+                <source src="images/Plat - CNC.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div id="tutorialResizeHandle"></div>
+    `;
+    document.body.appendChild(win);   // << ÚLTIMO no DOM = acima de tudo
 
-    modal.style.display = "flex";
-    video.currentTime = 0;
-    video.play();
-});
+    const video = win.querySelector("#tutorialVideo");
 
-// Fechar ao clicar no X
-document.getElementById("closeTutorial").addEventListener("click", function (e) {
-    e.stopPropagation();
-    const modal = document.getElementById("tutorialModal");
-    const video = document.getElementById("tutorialVideo");
-    modal.style.display = "none";
-    video.pause();
-});
+    // --- Abrir ---
+    document.querySelector("li div span[title='Tutorial']").parentElement
+        .addEventListener("click", function () {
+            // Centraliza na viewport ao abrir
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const w = Math.min(760, vw - 20);
+            win.style.width  = w + "px";
+            win.style.left   = Math.round((vw - w) / 2) + "px";
+            win.style.top    = "60px";
+            win.style.transform = "none";
+            win.style.display = "block";
+            video.currentTime = 0;
+            video.play();
+        });
 
-// Fechar ao tocar/clicar no fundo escuro (fora da caixa do vídeo)
-document.getElementById("tutorialModal").addEventListener("click", function (e) {
-    if (e.target === this) {
-        const video = document.getElementById("tutorialVideo");
-        this.style.display = "none";
+    // --- Fechar ---
+    win.querySelector("#closeTutorial").addEventListener("click", function (e) {
+        e.stopPropagation();
+        win.style.display = "none";
         video.pause();
+    });
+
+    // ============================================================
+    // DRAG — arrastar pela barra de título (mouse + touch)
+    // ============================================================
+    const handle = win.querySelector("#tutorialHandle");
+    let dragging = false, startX, startY, origLeft, origTop;
+
+    function dragStart(cx, cy) {
+        dragging = true;
+        startX = cx;
+        startY = cy;
+        origLeft = win.offsetLeft;
+        origTop  = win.offsetTop;
+        handle.style.cursor = "grabbing";
     }
-});
+    function dragMove(cx, cy) {
+        if (!dragging) return;
+        let nx = origLeft + (cx - startX);
+        let ny = origTop  + (cy - startY);
+        // Manter dentro da viewport
+        nx = Math.max(0, Math.min(window.innerWidth  - win.offsetWidth,  nx));
+        ny = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, ny));
+        win.style.left = nx + "px";
+        win.style.top  = ny + "px";
+    }
+    function dragEnd() {
+        dragging = false;
+        handle.style.cursor = "grab";
+    }
+
+    // Mouse
+    handle.addEventListener("mousedown",  e => { e.preventDefault(); dragStart(e.clientX, e.clientY); });
+    document.addEventListener("mousemove", e => dragMove(e.clientX, e.clientY));
+    document.addEventListener("mouseup",   () => dragEnd());
+
+    // Touch
+    handle.addEventListener("touchstart", e => {
+        const t = e.touches[0];
+        dragStart(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener("touchmove", e => {
+        if (!dragging) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        dragMove(t.clientX, t.clientY);
+    }, { passive: false });
+    document.addEventListener("touchend", () => dragEnd());
+
+    // ============================================================
+    // RESIZE — alça no canto inferior direito (mouse + touch)
+    // ============================================================
+    const resizeHandle = win.querySelector("#tutorialResizeHandle");
+    let resizing = false, rsStartX, rsStartY, rsOrigW, rsOrigH;
+
+    function resizeStart(cx, cy) {
+        resizing = true;
+        rsStartX = cx;
+        rsStartY = cy;
+        rsOrigW  = win.offsetWidth;
+        rsOrigH  = win.offsetHeight;
+    }
+    function resizeMove(cx, cy) {
+        if (!resizing) return;
+        const newW = Math.max(280, rsOrigW + (cx - rsStartX));
+        const newH = Math.max(180, rsOrigH + (cy - rsStartY));
+        // Não ultrapassar viewport
+        const maxW = window.innerWidth  - win.offsetLeft;
+        const maxH = window.innerHeight - win.offsetTop;
+        win.style.width  = Math.min(newW, maxW) + "px";
+        win.style.height = Math.min(newH, maxH) + "px";
+    }
+    function resizeEnd() { resizing = false; }
+
+    // Mouse
+    resizeHandle.addEventListener("mousedown",  e => { e.preventDefault(); e.stopPropagation(); resizeStart(e.clientX, e.clientY); });
+    document.addEventListener("mousemove", e => resizeMove(e.clientX, e.clientY));
+    document.addEventListener("mouseup",   () => resizeEnd());
+
+    // Touch
+    resizeHandle.addEventListener("touchstart", e => {
+        e.stopPropagation();
+        const t = e.touches[0];
+        resizeStart(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener("touchmove", e => {
+        if (!resizing) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        resizeMove(t.clientX, t.clientY);
+    }, { passive: false });
+    document.addEventListener("touchend", () => resizeEnd());
+})();
+// ======== FIM JANELA FLUTUANTE ========
 
 // === About Window ===
 document.addEventListener("DOMContentLoaded", function() {
