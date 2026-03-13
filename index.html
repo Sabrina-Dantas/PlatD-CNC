@@ -352,50 +352,51 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.75);
-    z-index: 99999;
+    background: rgba(0,0,0,0.85);
+    z-index: 2147483647; /* máximo possível — fica acima de tudo, inclusive do editor ACE */
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 16px;
+}
 
+/* Quando visível usa flex para centralizar */
+#tutorialModal[style*="flex"],
+#tutorialModal.ativo {
+    display: flex !important;
 }
 
 /* Caixa do vídeo */
-/*#tutorialContent {
-    background: #111;
-    padding: 20px;
-    border-radius: 10px;
-    position: relative;
-    box-shadow: 0 0 20px #000;
-}*/
 #tutorialContent {
     background: #1e1b1b;
-    padding: 20px 24px;
+    padding: 44px 16px 16px 16px; /* topo maior para o botão X não sobrepor o vídeo */
     border-radius: 10px;
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: relative;  /* relativo à própria caixa — botão X fica dentro dela */
     box-shadow: 0 10px 30px #132511;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
-
-/* Botão X */
-/* (ajustado dentro da janela) */
+/* Botão X — fixo no canto da CAIXA, sempre visível */
 #closeTutorial {
     position: absolute;
-    top: 8px;              /* move para dentro da caixa - estava 10 px antes */
+    top: 8px;
     right: 8px;
     background: #4b0d0d;
     color: #fff;
-    padding: 4px 10px;
-    font-size: 18px;
+    padding: 6px 12px;
+    font-size: 20px;
     font-weight: bold;
     line-height: 1;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     z-index: 10;
+    touch-action: manipulation; /* evita delay de 300ms no mobile */
     transition: background 0.2s ease, transform 0.1s ease;
 }
 #closeTutorial:hover {
@@ -403,12 +404,13 @@
     transform: scale(1.1);
 }
 
-
 /* Vídeo responsivo */
 #tutorialVideo {
-    max-width: 90vw;
-    max-height: 80vh;
+    max-width: min(720px, 90vw);
+    max-height: 75vh;
+    width: 100%;
     border-radius: 8px;
+    display: block;
 }
 
 /* ======== FIM ADIÇÕES ======== */
@@ -989,29 +991,27 @@ document.querySelector("li div span[title='Tutorial']").parentElement.addEventLi
     const video = document.getElementById("tutorialVideo");
 
     modal.style.display = "flex";
-    video.currentTime = 0;  // reinicia
+    video.currentTime = 0;
     video.play();
 });
 
 // Fechar ao clicar no X
-document.getElementById("closeTutorial").addEventListener("click", function () {
+document.getElementById("closeTutorial").addEventListener("click", function (e) {
+    e.stopPropagation();
     const modal = document.getElementById("tutorialModal");
     const video = document.getElementById("tutorialVideo");
-
     modal.style.display = "none";
     video.pause();
 });
 
-// Fechar ao clicar fora
-/*document.getElementById("tutorialModal").addEventListener("click", function (e) {
+// Fechar ao tocar/clicar no fundo escuro (fora da caixa do vídeo)
+document.getElementById("tutorialModal").addEventListener("click", function (e) {
     if (e.target === this) {
-        const modal = this;
         const video = document.getElementById("tutorialVideo");
-
-        modal.style.display = "none";
+        this.style.display = "none";
         video.pause();
     }
-});*/
+});
 
 // === About Window ===
 document.addEventListener("DOMContentLoaded", function() {
